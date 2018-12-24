@@ -2,31 +2,32 @@ package main
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"net"
-	"net/http"
 )
 
 type Server struct {
-	config     Config
-	exit       chan int
-	httpClient http.Client
+	config *Config
+	exit   chan int
+	log    *zap.SugaredLogger
 }
 
-func NewServer() *Server {
+func NewServer(config *Config, log *zap.SugaredLogger) *Server {
 	return &Server{
-		config: NewConfig(),
+		config: config,
 		exit:   make(chan int),
+		log:    log,
 	}
 }
 
 func (srv *Server) listen() (net.Listener, error) {
 	listener, err := net.Listen("tcp", srv.config.ListenAddr)
 	if err != nil {
-		log.Fatalw("Couldn't listen", "addr", srv.config.ListenAddr, "err", err)
+		srv.log.Fatalw("Couldn't listen", "addr", srv.config.ListenAddr, "err", err)
 		return nil, fmt.Errorf("couldn't listen on %s", srv.config.ListenAddr)
 	}
 
-	log.Infow("Listening for TCP connections", "addr", srv.config.ListenAddr)
+	srv.log.Infow("Listening for TCP connections", "addr", srv.config.ListenAddr)
 
 	go srv.acceptConnections(listener)
 
@@ -39,11 +40,11 @@ func (srv *Server) acceptConnections(listener net.Listener) {
 		// Listen for an incoming connection.
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Fatalw("Couldn't accept connection", "err", err)
+			srv.log.Fatalw("Couldn't accept connection", "err", err)
 			return
 		}
 		// Handle connections in a new goroutine.
 		clientNb += 1
-		go NewClientHandler(srv, conn, clientNb).run()
+		go srv.NewClientHandler(conn, clientNb).run()
 	}
 }

@@ -8,13 +8,19 @@ const winston = require('winston');
 require('winston-logstash');
 
 winston.add(winston.transports.Logstash, {
+    host: '127.0.0.1',
     port: 5050,
     node_name: 'mynode',
-    host: '127.0.0.1'
+    meta: {
+        appname: 'myapp',
+        env: 'dev',
+    },
 });
 
+let nb = 0;
+
 function logging() {
-    winston.info('Hello !')
+    winston.info(`Hello ! (${nb++})`)
 }
 
 logging();

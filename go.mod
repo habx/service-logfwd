@@ -1,4 +1,4 @@
-module github.com/fclairamb/logstash2scalyr
+module github.com/habx/service-logstash2scalyr
 
 require (
 	github.com/kelseyhightower/envconfig v1.3.0

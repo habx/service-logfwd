@@ -6,13 +6,7 @@ import (
 	"os"
 )
 
-var log *zap.SugaredLogger
-
-func init() {
-	initLog(false)
-}
-
-func initLog(dev bool) {
+func getLog(dev bool) *zap.SugaredLogger {
 	var config zap.Config
 	if dev {
 		config = zap.NewDevelopmentConfig()
@@ -22,15 +16,17 @@ func initLog(dev bool) {
 	}
 
 	logger, _ := config.Build()
-	log = logger.Sugar()
+	return logger.Sugar()
 }
 
 func main() {
-	server := NewServer()
+	log := getLog(false)
 
 	log.Infow("Starting")
 
-	if err := server.config.Load(); err != nil {
+	config := NewConfig()
+
+	if err := config.Load(); err != nil {
 		log.Fatalw(
 			"Couldn't load config",
 			"err", err,
@@ -38,14 +34,16 @@ func main() {
 		return
 	}
 
+	if config.LogEnv == "dev" {
+		log = getLog(true)
+	}
+
+	server := NewServer(config, log)
+
 	log.Infow(
 		"Loaded config",
 		"config", server.config,
 	)
-
-	if server.config.LogEnv == "dev" {
-		initLog(true)
-	}
 
 	if _, err := server.listen(); err != nil {
 		log.Fatalw("Can't listen", "err", err)

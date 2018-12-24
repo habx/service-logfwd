@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"net"
@@ -24,24 +25,27 @@ type ClientHandler struct {
 	arrivalTime   time.Time
 	sessionInfo   map[string]interface{}
 	maxNbEvents   int
+	log           *zap.SugaredLogger
 }
 
-func NewClientHandler(server *Server, conn net.Conn, nb int) *ClientHandler {
+func (srv *Server) NewClientHandler(conn net.Conn, nb int) *ClientHandler {
 	return &ClientHandler{
-		server:      server,
+		server:      srv,
 		Conn:        conn,
 		ID:          nb,
-		events:      make(chan *LogEvent, server.config.QueueSize),
+		events:      make(chan *LogEvent, srv.config.QueueSize),
 		arrivalTime: time.Now(),
 		sessionInfo: make(map[string]interface{}),
-		maxNbEvents: server.config.ScalyrMaxNbEvents,
+		maxNbEvents: srv.config.ScalyrRequestMaxNbEvents,
+		log:         srv.log.With("clientID", nb),
 	}
 }
 
 func (clt *ClientHandler) run() {
-	log.Infow("Client connected", "clientId", clt.ID)
+	clt.log.Infow("Client connected")
 
-	// It would have been interesting to send a first message explaining that this client just connected
+	// It would have been interesting to send a first message explaining that this client just connected, but this
+	// prevents from sending the proper initial sessionInfo extracted from the first logstash message.
 	/*
 		clt.events <- &LogEvent{
 			Severity:  2,
@@ -70,7 +74,7 @@ func (clt *ClientHandler) run() {
 		clt.events <- nil
 
 		if err := clt.Conn.Close(); err != nil {
-			log.Warnw("Issue closing connection", "err", err, "clientId", clt.ID)
+			clt.log.Warnw("Issue closing connection", "err", err)
 		}
 	}()
 	reader := bufio.NewReaderSize(clt.Conn, clt.server.config.LogstashMaxEventSize)
@@ -78,33 +82,17 @@ func (clt *ClientHandler) run() {
 		lineRaw, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				log.Infow("Client disconnected", "clientId", clt.ID)
+				clt.log.Infow("Client disconnected")
 			} else {
-				log.Errorw("Couldn't read from client", "clientId", clt.ID, "err", err)
+				clt.log.Errorw("Couldn't read from client", "err", err)
 			}
 			return
 		}
 		if err := clt.ParseLogstashLine(lineRaw); err != nil {
-			log.Errorw("Couldn't parse line from client", "clientId", clt.ID, "err", err)
+			clt.log.Errorw("Couldn't parse line from client", "err", err)
 			return
 		}
 	}
-}
-
-// These are the attribute keys to convert within a message
-var KeysToMessageConversions = map[string]string{
-	"@source_host": "hostname",
-	"@source_path": "file_path",
-	"@message":     "message",
-	"@type":        "logstash_type",
-	"@source":      "logstash_source",
-	"@tags":        "tags",
-}
-
-// These are the attribute keys to convert and move to the session
-var keysToSessionInfoConversions = map[string]string{
-	"appname": "serverHost",
-	"env":     "logfile",
 }
 
 const (
@@ -146,9 +134,8 @@ var SeverityConversions = map[string]int8{
 func (clt *ClientHandler) ParseLogstashLine(line string) error {
 	var lineJson map[string]interface{}
 
-	log.Debugw(
+	clt.log.Debugw(
 		"Received from logstash",
-		"clientId", clt.ID,
 		"line", line,
 	)
 
@@ -175,7 +162,7 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 
 	// Converting some keys to other keys in the message
 	for initialKey, value := range event.Attributes {
-		if targetKey, ok := KeysToMessageConversions[initialKey]; ok {
+		if targetKey, ok := clt.server.config.KeysToMessageConversions[initialKey]; ok {
 			event.Attributes[targetKey] = value
 			delete(event.Attributes, initialKey)
 		}
@@ -183,7 +170,7 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 
 	// Converting some keys to other keys in the session
 	for initialKey, value := range event.Attributes {
-		if targetKey, ok := keysToSessionInfoConversions[initialKey]; ok {
+		if targetKey, ok := clt.server.config.KeysToSessionInfoConversions[initialKey]; ok {
 			if event.sessionInfo == nil {
 				event.sessionInfo = make(map[string]interface{})
 			}
@@ -258,7 +245,7 @@ func (clt *ClientHandler) writeToScalyr() {
 		"source":   "logstash2scalyr",
 	}
 	sessionInfoLastTransmission := time.Unix(0, 0)
-	events := make([]*LogEvent, clt.server.config.ScalyrMaxNbEvents)
+	events := make([]*LogEvent, clt.server.config.ScalyrRequestMaxNbEvents)
 
 	for loop {
 		events := events[:0]
@@ -300,9 +287,8 @@ func (clt *ClientHandler) writeToScalyr() {
 		uploadData.Events = events
 
 		if err := clt.sendRequest(uploadData); err != nil {
-			log.Warnw(
+			clt.log.Warnw(
 				"Problem sending data",
-				"clientId", clt.ID,
 				"err", err,
 			)
 		}
@@ -315,15 +301,14 @@ func (clt *ClientHandler) sendRequest(uploadData *ScalyrUploadData) error {
 	for {
 		rawJson, err = json.Marshal(uploadData)
 		size := len(rawJson)
-		if size > clt.server.config.ScalyrMaxRequestSize {
+		if size > clt.server.config.ScalyrRequestMaxSize {
 			if clt.maxNbEvents > 1 {
-				log.Debugw(
+				clt.log.Debugw(
 					"Query too big, reducing the number of events",
 					"nbEvents", len(uploadData.Events),
 					"maxNbEvents", clt.maxNbEvents,
 					"size", size,
-					"maxSize", clt.server.config.ScalyrMaxRequestSize,
-					"clientId", clt.ID,
+					"maxSize", clt.server.config.ScalyrRequestMaxSize,
 				)
 				clt.maxNbEvents = len(uploadData.Events) - 1
 				lastEvent := uploadData.Events[len(uploadData.Events)-1]
@@ -336,7 +321,7 @@ func (clt *ClientHandler) sendRequest(uploadData *ScalyrUploadData) error {
 				return fmt.Errorf(
 					"request is too big: requestSize=%d > maxRequestSize=%d",
 					len(rawJson),
-					clt.server.config.ScalyrMaxRequestSize,
+					clt.server.config.ScalyrRequestMaxSize,
 				)
 			}
 		}
@@ -344,32 +329,30 @@ func (clt *ClientHandler) sendRequest(uploadData *ScalyrUploadData) error {
 	}
 
 	if err != nil {
-		log.Errorw(
+		clt.log.Errorw(
 			"Problem generating JSON",
-			"clientId", clt.ID,
 			"err", err,
 		)
 		return err
 	}
 
-	log.Debugw(
+	clt.log.Debugw(
 		"Scalyr HTTP Request",
 		"nbSentEvents", len(uploadData.Events),
 		"nbWaitingEvents", len(clt.events),
-		"clientId", clt.ID,
 		"data", string(rawJson),
 	)
 
 	backoffTime := time.Duration(0)
 	backoffIncrement := time.Second
 	for backoffIncrement < time.Minute {
-		time.Sleep(time.Duration(time.Millisecond.Nanoseconds() * int64(clt.server.config.ScalyrMinTimeBetweenQueries)))
+		time.Sleep(time.Duration(time.Millisecond.Nanoseconds() * int64(clt.server.config.ScalyrRequestMinPeriod)))
 
 		var resp *http.Response
 		resp, err = clt.httpClient.Post(clt.server.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJson))
 
 		if err != nil {
-			log.Warnw(
+			clt.log.Warnw(
 				"HTTP request error",
 				"err", err,
 			)
@@ -383,7 +366,7 @@ func (clt *ClientHandler) sendRequest(uploadData *ScalyrUploadData) error {
 			if uploadData.SessionInfo != nil {
 				uploadData.SessionInfo = nil
 			}
-			if clt.maxNbEvents < clt.server.config.ScalyrMaxNbEvents {
+			if clt.maxNbEvents < clt.server.config.ScalyrRequestMaxNbEvents {
 				clt.maxNbEvents += 1
 			}
 		}
@@ -391,25 +374,23 @@ func (clt *ClientHandler) sendRequest(uploadData *ScalyrUploadData) error {
 		{
 			var body []byte
 			if body, err = ioutil.ReadAll(resp.Body); err != nil {
-				log.Warnw(
+				clt.log.Warnw(
 					"Issue reading response",
 					"err", err,
 				)
 				continue
 			} else {
-				log.Debugw("Scalyr HTTP Response",
+				clt.log.Debugw("Scalyr HTTP Response",
 					"statusCode", resp.StatusCode,
 					"statusMsg", resp.Status,
 					"body", string(body),
-					"clientId", clt.ID,
 				)
 			}
 		}
 
 		if err = resp.Body.Close(); err != nil {
-			log.Errorw(
+			clt.log.Errorw(
 				"Problem closing HTTP response body",
-				"clientId", clt.ID,
 				"err", err,
 			)
 			continue

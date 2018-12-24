@@ -29,11 +29,6 @@ To easily re-use an existing logstash implementation, a few tricks are needed:
 - `level` / `levelname` fields are converted to the scalyr's `sev` fields
 - `source` is set to `logstash2scalyr`
 
-### Additional events
-This tool only logs two additional events compared to the logstash ones:
-- `Client connected`
-- `Client disconnected`
-
 ### Env vars
 Everything is handled through environment variables
 
@@ -47,8 +42,6 @@ Everything is handled through environment variables
 Because each logstash TCP connection has its own logging session, you can easily separate them by filtering by the 
 sessionId which is helpful during diagnostics.
 
-To reduce the bandwidth, the sessionInfo is retransmitted at most every 3 minutes.
-
 We use an exponential backoff in case of errors. It's definitely not properly setup.
 
 # Dependencies
@@ -61,8 +54,6 @@ The dependencies outside the standard library are:
 Any feedback is welcome.
 
 # Possible evolutions
-- Some fields have a constant value between clients calls. We could put them in the sessionInfo and drop them from the
-events transmission to limit the amount of data being sent.
 - Handling of scalyr's threads. I'm not entirely sure of how we could use them. It seems like the most similar concept
 are the tags in a logstash world.
 
@@ -70,10 +61,9 @@ are the tags in a logstash world.
 - Could be optimized (but probably handles tenths of megabytes per second)
 - Some logstash fields might not be very well converted
 - Some logstash fields might be transmitted in the session data to reduce the amount of data being sent
-- No handling of `413 Entity too large`: We don't try to prevent it or try to deal with it (but never faced it)
 - Each connection can consume a lot of memory (roughly 300KB * 1000 = 300MB), but will likely consume a lot less in standard usage
-- Needs some refactoring to cut some parts of the code
-- SSL isn't supported, easy to add
+- Needs some refactoring
+- SSL isn't supported (easy to add)
 - No clean shutdown: We should stop to accept clients and disconnect existing ones
 - Only supports TCP. UDP wouldn't be difficult to setup but the sessionInfo mechanism would have to be handheld by other means
 
