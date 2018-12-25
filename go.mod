@@ -1,4 +1,4 @@
-module github.com/habx/service-logstash2scalyr
+module github.com/habx/service-logfwd
 
 require (
 	github.com/kelseyhightower/envconfig v1.3.0

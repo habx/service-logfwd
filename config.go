@@ -2,69 +2,55 @@ package main
 
 import (
 	"fmt"
+	"github.com/habx/service-logfwd/clients"
+	"github.com/habx/service-logfwd/clients/list"
 	"github.com/kelseyhightower/envconfig"
-	"strings"
 )
 
 type Config struct {
-	ListenAddr                   string            `envconfig:"LISTEN_ADDR"`                     // Listening address
-	ScalyrServer                 string            `envconfig:"SCALYR_SERVER"`                   // Scalyr target URL
-	LogEnv                       string            `envconfig:"LOG_ENV"`                         // Logging environment: dev or prod
-	KeysToMessageConversions     map[string]string `envconfig:"FIELDS_CONV_MESSAGE"`             // Logstash to scalyr events fields conversion
-	KeysToSessionInfoConversions map[string]string `envconfig:"FIELDS_CONV_SESSION"`             // Logstash to scalyr session fields conversion
-	ScalyrToken                  string            `envconfig:"SCALYR_WRITELOG_TOKEN"`           // Scalyr token
-	ScalyrRequestMaxNbEvents     int               `envconfig:"SCALYR_REQUEST_MAX_NB_EVENTS"`    // Scalyr max nb of events
-	ScalyrRequestMaxSize         int               `envconfig:"SCALYR_REQUEST_MAX_REQUEST_SIZE"` // Scalyr max request size
-	ScalyrRequestMinPeriod       int               `envconfig:"SCALYR_REQUEST_MIN_PERIOD"`       // Milliseconds between queries (mostly used for tests)
-	QueueSize                    int               `envconfig:"QUEUE_SIZE"`                      // Maximum number of events to queue between logstash and scalyr
-	LogstashMaxEventSize         int               `envconfig:"LOGSTASH_EVENT_MAX_SIZE"`         // Maximum size accepted for reading data in logstash
-	LogstashAuthKey              string            `envconfig:"LOGSTASH_AUTH_KEY"`               // Logstash authentication key
-	LogstashAuthValue            string            `envconfig:"LOGSTASH_AUTH_VALUE"`             // Logstash authentication value
+	ListenAddr           string `envconfig:"LISTEN_ADDR"`             // Listening address
+	LogEnv               string `envconfig:"LOG_ENV"`                 // Logging environment: dev or prod
+	LogstashMaxEventSize int    `envconfig:"LOGSTASH_EVENT_MAX_SIZE"` // Maximum size accepted for reading data in logstash
+	LogstashAuthKey      string `envconfig:"LOGSTASH_AUTH_KEY"`       // Logstash authentication key
+	LogstashAuthValue    string `envconfig:"LOGSTASH_AUTH_VALUE"`     // Logstash authentication value
+	OutputClientConfigs  map[string]clients.Config
+	//Scalyr              *scalyr.Config
 }
 
 func NewConfig() *Config {
 	return &Config{
-		ListenAddr:               ":5050",
-		ScalyrServer:             "https://www.scalyr.com",
-		ScalyrRequestMaxNbEvents: 20,
-		ScalyrRequestMaxSize:     2 * 1024 * 1024, // 2MB is much lower than the allowed 3MB
-		ScalyrRequestMinPeriod:   1000,
-		LogstashMaxEventSize:     300 * 1024, // 300KB
-		QueueSize:                1000,
-		// These are the attribute keys to convert within a message
-		KeysToMessageConversions: map[string]string{
-			"@source_host": "hostname",
-			"@source_path": "file_path",
-			"@message":     "message",
-			"@type":        "logstash_type",
-			"@source":      "logstash_source",
-			"@tags":        "tags",
-		},
-		// These are the attribute keys to convert and move to the session
-		KeysToSessionInfoConversions: map[string]string{
-			"appname": "serverHost",
-			"env":     "logfile",
-		},
-		LogEnv: "prod",
+		ListenAddr:           ":5050",
+		LogstashMaxEventSize: 300 * 1024, // 300KB
+		LogEnv:               "prod",
+		OutputClientConfigs:  make(map[string]clients.Config),
+		//Scalyr:               scalyr.NewConfig(),
 	}
 }
 
 func (c *Config) Load() error {
+	/*
+		if err := c.Scalyr.Load(); err != nil {
+			return fmt.Errorf("couldn't load scalyr config: %s", err)
+		}
+	*/
 	if err := envconfig.Process("", c); err != nil {
 		return fmt.Errorf("couldn't load config from env vars: %s", err)
 	}
 	if err := c.check(); err != nil {
 		return fmt.Errorf("config check issue: %s", err)
 	}
+
+	for _, oc := range list.LIST {
+		conf := oc.Config()
+		if err := conf.Load(); err != nil {
+			return fmt.Errorf("couldn't load output client of %s: %s", oc.Name(), err)
+		}
+		c.OutputClientConfigs[oc.Name()] = conf
+	}
+
 	return nil
 }
 
 func (c *Config) check() error {
-	if c.ScalyrToken == "" {
-		return fmt.Errorf("no scalyr token was provided, use SCALYR_WRITELOG_TOKEN env var to specify it")
-	}
-	if strings.HasSuffix(c.ScalyrServer, "/") {
-		return fmt.Errorf("do not end the URL by a /")
-	}
 	return nil
 }

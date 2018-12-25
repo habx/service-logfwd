@@ -29,7 +29,7 @@ To easily re-use an existing logstash implementation, a few tricks are needed:
 - `@message` becomes the `message` attributes
 - `@fields` are brought moved to the root attribute properties (as scalyr doesn't support nested search)
 - `level` / `levelname` fields are converted to the scalyr's `sev` fields
-- `source` is set to `logstash2scalyr`
+- `source` is set to `logfwd`
 
 ### Env vars
 Everything is handled through environment variables

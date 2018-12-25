@@ -25,4 +25,4 @@ while True:
         'test_list': [1, 2, '3'],
     }
     test_logger.info('python-logstash: test extra fields', extra=extra)
-    time.sleep(2)
+    time.sleep(15)

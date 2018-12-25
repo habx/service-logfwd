@@ -15,10 +15,9 @@ type Server struct {
 
 func NewServer(config *Config, log *zap.SugaredLogger) *Server {
 	return &Server{
-		config:         config,
-		exit:           make(chan int),
-		log:            log,
-		scalyrEndpoint: fmt.Sprintf("%s/addEvents", config.ScalyrServer),
+		config: config,
+		exit:   make(chan int),
+		log:    log,
 	}
 }
 
