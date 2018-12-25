@@ -238,19 +238,21 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 	return nil
 }
 
-type LogEvent struct {
-	Timestamp   int64                  `json:"ts"`
-	Severity    int8                   `json:"sev"`
-	Attributes  map[string]interface{} `json:"attrs"`
-	sessionInfo map[string]interface{}
-}
-
+// The request as specified in the API doc ( https://www.scalyr.com/help/api#addEvents )
 type ScalyrUploadData struct {
 	Token       string                 `json:"token"`
 	Session     string                 `json:"session"`
 	SessionInfo map[string]interface{} `json:"sessionInfo,omitempty"`
 	Threads     map[string]interface{} `json:"threads,omitempty"`
 	Events      []*LogEvent            `json:"events"`
+}
+
+// The log event as specified in the API doc
+type LogEvent struct {
+	Timestamp   int64                  `json:"ts"`
+	Severity    int8                   `json:"sev"`
+	Attributes  map[string]interface{} `json:"attrs"`
+	sessionInfo map[string]interface{}
 }
 
 func (clt *ClientHandler) writeToScalyr() {

@@ -77,16 +77,16 @@ We use an exponential backoff in case of errors.
 
 # Dependencies
 The dependencies outside the standard library are:
-- https://github.com/uber-go/zap
-- github.com/kelseyhightower/envconfig
-- github.com/satori/go.uuid
+
+- [zap](https://github.com/uber-go/zap) for logs
+- [envconfig](github.com/kelseyhightower/envconfig) for config management through environemnt variables
+- [go.uuid](github.com/satori/go.uuid) for scalyr sessions UUID generation
 
 # Feedback
 Any feedback is welcome.
 
 # Possible evolutions
-- Handling of scalyr's threads. I'm not entirely sure of how we could use them. It seems like the most similar concept
-are the tags in a logstash world.
+- Handling of scalyr's threads. I'm not entirely sure of how we could use them.
 
 # Known issues
 - Could be optimized (but probably handles tenths of megabytes per second)
