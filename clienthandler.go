@@ -26,6 +26,7 @@ type ClientHandler struct {
 	sessionInfo   map[string]interface{}
 	maxNbEvents   int
 	log           *zap.SugaredLogger
+	needsAuth     bool
 }
 
 func (srv *Server) NewClientHandler(conn net.Conn, nb int) *ClientHandler {
@@ -38,6 +39,7 @@ func (srv *Server) NewClientHandler(conn net.Conn, nb int) *ClientHandler {
 		sessionInfo: make(map[string]interface{}),
 		maxNbEvents: srv.config.ScalyrRequestMaxNbEvents,
 		log:         srv.log.With("clientID", nb),
+		needsAuth:   srv.config.LogstashAuthKey != "",
 	}
 }
 
@@ -59,15 +61,19 @@ func (clt *ClientHandler) run() {
 	go clt.writeToScalyr()
 	defer func() {
 		departure := time.Now()
-		clt.events <- &LogEvent{
-			Severity:  2,
-			Timestamp: departure.UnixNano(),
-			Attributes: map[string]interface{}{
-				"message":       "Client disconnected",
-				"action":        "client_disconnected",
-				"duration":      departure.Sub(clt.arrivalTime) / time.Second,
-				"totalNbEvents": clt.totalNbEvents,
-			},
+
+		// We only log disconnection if at least one event was parsed
+		if clt.totalNbEvents > 0 {
+			clt.events <- &LogEvent{
+				Severity:  2,
+				Timestamp: departure.UnixNano(),
+				Attributes: map[string]interface{}{
+					"message":       "Client disconnected",
+					"action":        "client_disconnected",
+					"duration":      departure.Sub(clt.arrivalTime) / time.Second,
+					"totalNbEvents": clt.totalNbEvents,
+				},
+			}
 		}
 
 		// Event closing the scaly HTTP sender
@@ -90,6 +96,9 @@ func (clt *ClientHandler) run() {
 		}
 		if err := clt.ParseLogstashLine(lineRaw); err != nil {
 			clt.log.Errorw("Couldn't parse line from client", "err", err)
+			if _, err := clt.Conn.Write([]byte(err.Error())); err != nil {
+				clt.log.Infow("Couldn't write bye bye message", "err", err)
+			}
 			return
 		}
 	}
@@ -141,6 +150,19 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 
 	if err := json.Unmarshal([]byte(line), &lineJson); err != nil {
 		return err
+	}
+
+	// Checking authentication if required
+	if clt.needsAuth {
+		value, ok := lineJson[clt.server.config.LogstashAuthKey]
+		if !ok || clt.server.config.LogstashAuthValue != value {
+			return fmt.Errorf("wrong authentication with key %s", clt.server.config.LogstashAuthKey)
+		}
+		clt.needsAuth = false
+	}
+
+	if clt.server.config.LogstashAuthKey != "" {
+		delete(lineJson, clt.server.config.LogstashAuthKey)
 	}
 
 	event := &LogEvent{
@@ -349,7 +371,7 @@ func (clt *ClientHandler) sendRequest(uploadData *ScalyrUploadData) error {
 		time.Sleep(time.Duration(time.Millisecond.Nanoseconds() * int64(clt.server.config.ScalyrRequestMinPeriod)))
 
 		var resp *http.Response
-		resp, err = clt.httpClient.Post(clt.server.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJson))
+		resp, err = clt.httpClient.Post(clt.server.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJson))
 
 		if err != nil {
 			clt.log.Warnw(

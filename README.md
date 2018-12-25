@@ -5,11 +5,13 @@ This tool allows to use scalyr logging platform as drop-in replacement for your 
 Switching your previous logs to it should be a matter of minutes.
 
 ## Why
-Scalyr is a very convenient logging solution but it clearly lacks some third-party integrations.
+Scalyr is a very convenient logging solution but it lacks some third-party integrations.
 
 Logstash has logging clients in all languages, it's good compromise between simplicity and performance.
 
 The scalyr agent, at least in kubernetes, consumes a lot of CPU and memory. So I quickly discarded it.
+
+This all started because logmatic pushed us out of their service.
 
 ## How it works
 
@@ -32,17 +34,46 @@ To easily re-use an existing logstash implementation, a few tricks are needed:
 ### Env vars
 Everything is handled through environment variables
 
-- `LS2S_TOKEN` (mandatory) : Your log write token
-- `LS2S_URL` (optional): URL to use for reporting logs. Defaults to `https://www.scalyr.com/addEvents`, you can also use `https://eu.scalyr.com/addEvents` for an european account
-- `LS2S_MAXLINESIZE` (optional): Maximum size of each logstash line being parsed. Defaults to `307200` (300 KB)
-- `LS2S_LISTENADDR` (optional): Port to listen on. Defaults to `:5050`
-- `LS2S_LOGENV` (optional): Logging mode. Defaults to `prod`. Use `dev` for sort-of-pretty logging in debug level,
+- `SCALYR_WRITELOG_TOKEN` (mandatory) : Your log write token
+- `LISTEN_ADDR` (optional): Port to listen on. Defaults to `:5050`
+- `FIELDS_CONV_MESSAGE` (optional): Conversion to apply between logstash and scalyr event attributes
+- `FIELDS_CONV_SESSION` (optional): Conversion to apply between logstash events and scalyr log session attributes
+- `LOG_ENV` (optional): Logging mode. Defaults to `prod`. Use `dev` for sort-of-pretty logging in debug level.
+- `SCALYR_SERVER` (optional): URL to use for reporting logs. Defaults to `https://www.scalyr.com`, you can also use `https://eu.scalyr.com` for an european account
+- `SCALYR_REQUEST_MAX_NB_EVENTS` (optional): Max number of events to send by request. Defaults to `20`
+- `SCALYR_REQUEST_MAX_REQUEST_SIZE` (optional): Maximum size of a request. Defaults to `2097152` (2MB)
+- `SCALYR_REQUEST_MIN_PERIOD` (optional): Minimum time between queries (mostly for testing, can also be used to reduce total bandwidth)
+- `LOGSTASH_EVENT_MAX_SIZE` (optional): Maximum size of a logstash event. Defaults to `307200` (300 KB)
+- `LOGSTASH_AUTH_KEY` (optional): Key to use for authentication. Not set by default
+- `LOGSTASH_AUTH_VALUE` (optional): Value expected for the authentication key. Not set by default
+- `QUEUE_SIZE` (optional): Buffering queue between logstash and scalyr. Defaults to `1000`
 
 ### Few implementation notes
 Because each logstash TCP connection has its own logging session, you can easily separate them by filtering by the 
 sessionId which is helpful during diagnostics.
 
-We use an exponential backoff in case of errors. It's definitely not properly setup.
+We use an exponential backoff in case of errors.
+
+### Default conversions
+#### For messages
+```json
+{
+    "@source_host": "hostname",
+    "@source_path": "file_path",
+    "@message":     "message",
+    "@type":        "logstash_type",
+    "@source":      "logstash_source",
+    "@tags":        "tags"
+}
+```
+
+#### For sessions
+```json
+{
+    "appname": "serverHost",
+    "env":     "logfile"
+}
+```
 
 # Dependencies
 The dependencies outside the standard library are:

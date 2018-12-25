@@ -9,16 +9,17 @@ import (
 type Config struct {
 	ListenAddr                   string            `envconfig:"LISTEN_ADDR"`                     // Listening address
 	ScalyrServer                 string            `envconfig:"SCALYR_SERVER"`                   // Scalyr target URL
+	LogEnv                       string            `envconfig:"LOG_ENV"`                         // Logging environment: dev or prod
+	KeysToMessageConversions     map[string]string `envconfig:"FIELDS_CONV_MESSAGE"`             // Logstash to scalyr events fields conversion
+	KeysToSessionInfoConversions map[string]string `envconfig:"FIELDS_CONV_SESSION"`             // Logstash to scalyr session fields conversion
 	ScalyrToken                  string            `envconfig:"SCALYR_WRITELOG_TOKEN"`           // Scalyr token
 	ScalyrRequestMaxNbEvents     int               `envconfig:"SCALYR_REQUEST_MAX_NB_EVENTS"`    // Scalyr max nb of events
 	ScalyrRequestMaxSize         int               `envconfig:"SCALYR_REQUEST_MAX_REQUEST_SIZE"` // Scalyr max request size
 	ScalyrRequestMinPeriod       int               `envconfig:"SCALYR_REQUEST_MIN_PERIOD"`       // Milliseconds between queries (mostly used for tests)
-	LogstashMaxEventSize         int               `envconfig:"LOGSTASH_EVENT_MAX_SIZE"`         // Maximum size accepted for reading data in logstash
-	LogEnv                       string            `envconfig:"LOG_ENV"`                         // Logging environment: dev or prod
 	QueueSize                    int               `envconfig:"QUEUE_SIZE"`                      // Maximum number of events to queue between logstash and scalyr
-	KeysToMessageConversions     map[string]string `envconfig:"FIELDS_CONV_MESSAGE"`             // Logstash to scalyr events fields conversion
-	KeysToSessionInfoConversions map[string]string `envconfig:"FIELDS_CONV_SESSION"`             // Logstash to scalyr session fields conversion
-	scalyrEndpoint               string            // Endpoint
+	LogstashMaxEventSize         int               `envconfig:"LOGSTASH_EVENT_MAX_SIZE"`         // Maximum size accepted for reading data in logstash
+	LogstashAuthKey              string            `envconfig:"LOGSTASH_AUTH_KEY"`               // Logstash authentication key
+	LogstashAuthValue            string            `envconfig:"LOGSTASH_AUTH_VALUE"`             // Logstash authentication value
 }
 
 func NewConfig() *Config {
@@ -52,7 +53,6 @@ func (c *Config) Load() error {
 	if err := envconfig.Process("", c); err != nil {
 		return fmt.Errorf("couldn't load config from env vars: %s", err)
 	}
-	c.scalyrEndpoint = fmt.Sprintf("%s/addEvents", c.ScalyrServer)
 	if err := c.check(); err != nil {
 		return fmt.Errorf("config check issue: %s", err)
 	}

@@ -7,16 +7,18 @@ import (
 )
 
 type Server struct {
-	config *Config
-	exit   chan int
-	log    *zap.SugaredLogger
+	config         *Config
+	exit           chan int
+	log            *zap.SugaredLogger
+	scalyrEndpoint string
 }
 
 func NewServer(config *Config, log *zap.SugaredLogger) *Server {
 	return &Server{
-		config: config,
-		exit:   make(chan int),
-		log:    log,
+		config:         config,
+		exit:           make(chan int),
+		log:            log,
+		scalyrEndpoint: fmt.Sprintf("%s/addEvents", config.ScalyrServer),
 	}
 }
 
