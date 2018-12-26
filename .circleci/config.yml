@@ -2,7 +2,7 @@ version: 2
 jobs:
   build-binary:
     docker:
-      - image: golang:1.11
+      - image: circleci/golang:1.11
     steps:
       - checkout
       - run: .circleci/build-binary.sh
