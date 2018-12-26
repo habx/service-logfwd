@@ -1,0 +1,18 @@
+version: 2
+jobs:
+  build-binary:
+    docker:
+      - image: golang:1.11-alpine
+    steps:
+      - checkout
+      - run: .circleci/build-binary.sh
+      - store_artifacts:
+          path: /tmp/artifacts
+  build-docker-image:
+    docker:
+      - image: docker:18
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: .circleci/build-image.sh
+
