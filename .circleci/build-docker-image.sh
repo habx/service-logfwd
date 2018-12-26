@@ -2,6 +2,10 @@
 
 env
 
+if [ ! -f logfwd ]; then
+    cp /workspace/logfwd .
+fi
+
 DOCKER_IMAGE_NAME=habx/logfwd
 
 if [ -n "${CIRCLE_TAG}" ]; then

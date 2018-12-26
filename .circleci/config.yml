@@ -15,7 +15,6 @@ jobs:
   build-docker-image:
     docker:
       - image: docker:18
-    working_directory: /build
     steps:
       - checkout
       - attach_workspace:
