@@ -118,28 +118,28 @@ func (clt *Client) writeToScalyr() {
 		"conn_id":  clt.srcClient.ID(),
 		"source":   "logfwd",
 	}
-	sessionInfoLastTransmission := time.Unix(0, 0)
+	// sessionInfoLastTransmission := time.Unix(0, 0)
 	events := make([]*LogEvent, clt.config.RequestMaxNbEvents)
 
 	for loop {
 		events := events[:0]
 
 		// Every 3 minutes, we give some info about the current steam
-		sessionInfoSend := time.Now().Sub(sessionInfoLastTransmission) > time.Second*30
+		// sessionInfoSend := time.Now().Sub(sessionInfoLastTransmission) > time.Second*30
 
 		// We read all the events
 		for len(events) == 0 || (len(clt.events) > 0 && len(events) < clt.maxNbEvents) {
 			event := <-clt.events
 			if event == nil {
 				loop = false
-				sessionInfoSend = true
+				// sessionInfoSend = true
 			} else {
 				// Adding all the event's sessionInfo to the stream session info
 				if event.sessionInfo != nil {
 					for k, v := range event.sessionInfo {
 						if sessionInfo[k] != v {
 							sessionInfo[k] = v
-							sessionInfoSend = true
+							// sessionInfoSend = true
 						}
 					}
 					event.sessionInfo = nil
@@ -149,14 +149,14 @@ func (clt *Client) writeToScalyr() {
 		}
 
 		// Always send sessionInfo for now
-		sessionInfoSend = true
+		// sessionInfoSend = true
 
 		// If we have some session data to send
-		if sessionInfoSend {
-			sessionInfoSend = false
-			sessionInfoLastTransmission = time.Now()
-			uploadData.SessionInfo = sessionInfo
-		}
+		// if sessionInfoSend {
+		// sessionInfoSend = false
+		// sessionInfoLastTransmission = time.Now()
+		uploadData.SessionInfo = sessionInfo
+		// }
 
 		uploadData.Events = events
 

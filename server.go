@@ -10,7 +10,6 @@ type Server struct {
 	config         *Config
 	exit           chan int
 	log            *zap.SugaredLogger
-	scalyrEndpoint string
 }
 
 func NewServer(config *Config, log *zap.SugaredLogger) *Server {

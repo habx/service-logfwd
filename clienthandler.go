@@ -20,7 +20,6 @@ type ClientHandler struct {
 	id            int
 	totalNbEvents int
 	arrivalTime   time.Time
-	maxNbEvents   int
 	log           *zap.SugaredLogger
 	needsAuth     bool
 	outputs       []clients.OutputClient
