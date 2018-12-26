@@ -12,6 +12,12 @@ jobs:
           root: /tmp/artifacts
           paths:
             - logfwd
+  linting:
+    docker:
+      - image: golangci/golangci-lint:v1.12
+    steps:
+      - checkout
+      - run: .circleci/linting.sh
   build-docker-image:
     docker:
       - image: docker:18
@@ -30,3 +36,4 @@ workflows:
       - build-docker-image:
           requires:
             - build-binary
+      - linting

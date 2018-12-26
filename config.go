@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/habx/service-logfwd/clients"
 	"github.com/habx/service-logfwd/clients/list"
 	"github.com/kelseyhightower/envconfig"
 )
 
+// Config is the main config
 type Config struct {
 	ListenAddr           string `envconfig:"LISTEN_ADDR"`             // Listening address
 	LogEnv               string `envconfig:"LOG_ENV"`                 // Logging environment: dev or prod
@@ -40,12 +42,21 @@ func (c *Config) Load() error {
 		return fmt.Errorf("config check issue: %s", err)
 	}
 
-	for _, oc := range list.LIST {
-		conf := oc.Config()
-		if err := conf.Load(); err != nil {
-			return fmt.Errorf("couldn't load output client of %s: %s", oc.Name(), err)
+	{
+		anOutputWasEnabled := false
+
+		for _, oc := range list.LIST {
+			conf := oc.Config()
+			if err := conf.Load(); err != nil {
+				return fmt.Errorf("couldn't load output client of %s: %s", oc.Name(), err)
+			}
+			anOutputWasEnabled = anOutputWasEnabled || conf.Enabled()
+			c.OutputClientConfigs[oc.Name()] = conf
 		}
-		c.OutputClientConfigs[oc.Name()] = conf
+
+		if !anOutputWasEnabled {
+			return fmt.Errorf("at least one output client should be enabled")
+		}
 	}
 
 	return nil

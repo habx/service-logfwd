@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// ClientHandler is structure instantiate for each new (logstash) incoming client
 type ClientHandler struct {
 	server        *Server
 	Conn          net.Conn
@@ -25,6 +26,7 @@ type ClientHandler struct {
 	outputs       []clients.OutputClient
 }
 
+// NewClientHandler instantiates a new client handler
 func (srv *Server) NewClientHandler(conn net.Conn, nb int) *ClientHandler {
 	clt := &ClientHandler{
 		server:      srv,
@@ -239,7 +241,7 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 		}
 	}
 
-	clt.totalNbEvents += 1
+	clt.totalNbEvents++
 	clt.send(event)
 
 	return nil
