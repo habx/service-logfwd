@@ -1,4 +1,4 @@
 #!/bin/sh -ex
 
-golangci-lint run
+golangci-lint run ./...
 
