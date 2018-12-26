@@ -15,6 +15,7 @@ jobs:
   linting:
     docker:
       - image: golang:1.11 # circleci/golang:1.11 #golangci/golangci-lint:v1.10
+    working_directory: /work
     steps:
       - checkout
       - run: .circleci/linting.sh
