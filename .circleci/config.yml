@@ -18,9 +18,9 @@ jobs:
     working_directory: /build
     steps:
       - checkout
-      - setup_remote_docker
       - attach_workspace:
           at: /build
+      - setup_remote_docker
       - run: .circleci/build-docker-image.sh
 
 workflows:
