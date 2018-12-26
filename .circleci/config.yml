@@ -14,7 +14,7 @@ jobs:
             - logfwd
   linting:
     docker:
-      - image: golangci/golangci-lint:v1.12
+      - image: golangci/golangci-lint:v1.10
     steps:
       - checkout
       - run: .circleci/linting.sh
