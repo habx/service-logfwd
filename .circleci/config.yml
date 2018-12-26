@@ -19,7 +19,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: /workspace
-      - run: ls
+      - run: find
       - run: ls /workspace
       - setup_remote_docker
       - run: .circleci/build-docker-image.sh
