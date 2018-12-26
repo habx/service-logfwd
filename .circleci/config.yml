@@ -14,7 +14,7 @@ jobs:
             - logfwd
   build-docker-image:
     docker:
-      - image: circleci/docker:18
+      - image: docker:18
     steps:
       - checkout
       - attach_workspace:
