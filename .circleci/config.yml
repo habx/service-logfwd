@@ -24,6 +24,7 @@ jobs:
       - run: pwd
       - setup_remote_docker
       - run: pwd
+      - run: find
       - run: .circleci/build-docker-image.sh
 
 workflows:
