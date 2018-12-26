@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build-binary:
+    docker:
+      - image: circleci/golang:1.11
+    steps:
+      - checkout
+      - run: .circleci/build-binary.sh
+      - store_artifacts:
+          path: /tmp/artifacts
+      - persist_to_workspace:
+          root: /tmp/artifacts
+          paths:
+            - logfwd
+  build-docker-image:
+    docker:
+      - image: docker:18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /workspace
+      - setup_remote_docker
+      - run: .circleci/build-docker-image.sh
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-binary
+      - build-docker-image:
+          requires:
+            - build-binary
