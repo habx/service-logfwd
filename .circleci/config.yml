@@ -3,7 +3,6 @@ jobs:
   build-binary:
     docker:
       - image: circleci/golang:1.11
-    working_directory: /build
     steps:
       - checkout
       - run: .circleci/build-binary.sh
