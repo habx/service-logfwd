@@ -8,12 +8,19 @@ jobs:
       - run: .circleci/build-binary.sh
       - store_artifacts:
           path: /tmp/artifacts
+      - persist_to_workspace:
+          root: /tmp/artifacts
+          paths:
+            - logfwd
   build-docker-image:
     docker:
       - image: docker:18
+    working_directory: /build
     steps:
       - checkout
       - setup_remote_docker
+      - attach_workspace:
+          at: /build
       - run: .circleci/build-docker-image.sh
 
 workflows:
@@ -21,4 +28,6 @@ workflows:
   build:
     jobs:
       - build-binary
-      - build-docker-image
+      - build-docker-image:
+          requires:
+            - build-binary
