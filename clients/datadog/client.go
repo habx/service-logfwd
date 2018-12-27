@@ -4,9 +4,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/habx/service-logfwd/clients"
 	"go.uber.org/zap"
-	"time"
 )
 
 type Client struct {
@@ -25,7 +26,7 @@ func NewClient(ch clients.ClientHandler, baseConfig clients.Config) *Client {
 		events:    make(chan *LogEvent, config.QueueSize),
 	}
 
-	go clt.writeToDatadogTcpInput()
+	go clt.writeToDatadogTCPInput()
 
 	return clt
 }
@@ -47,15 +48,14 @@ func (ev *LogEvent) export() string {
 		if i > 0 {
 			tags += ","
 		}
-		i += 1
+		i++
 		tags += fmt.Sprintf("%s:%s", k, v)
 	}
 	ev.Attributes["ddtags"] = tags
 	if b, err := json.Marshal(ev.Attributes); err == nil {
 		return string(b)
-	} else {
-		return "{}"
 	}
+	return "{}"
 }
 
 func (clt *Client) Send(srcEvent *clients.LogEvent) {
@@ -96,7 +96,7 @@ func (clt *Client) Name() string {
 	return "datadog"
 }
 
-func (clt *Client) writeToDatadogTcpInput() {
+func (clt *Client) writeToDatadogTCPInput() {
 
 	var conn *tls.Conn
 	var err error

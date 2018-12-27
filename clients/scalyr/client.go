@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/habx/service-logfwd/clients"
-	"github.com/satori/go.uuid"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/habx/service-logfwd/clients"
+	"github.com/satori/go.uuid"
+	"go.uber.org/zap"
 )
 
 type Client struct {
@@ -170,11 +171,11 @@ func (clt *Client) writeToScalyr() {
 }
 
 func (clt *Client) sendRequest(uploadData *UploadData) error {
-	var rawJson []byte
+	var rawJSON []byte
 	var err error
 	for {
-		rawJson, err = json.Marshal(uploadData)
-		size := len(rawJson)
+		rawJSON, err = json.Marshal(uploadData)
+		size := len(rawJSON)
 		if size > clt.config.RequestMaxSize {
 			if clt.maxNbEvents > 1 {
 				clt.log.Debugw(
@@ -194,7 +195,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 			} else {
 				return fmt.Errorf(
 					"request is too big: requestSize=%d > maxRequestSize=%d",
-					len(rawJson),
+					len(rawJSON),
 					clt.config.RequestMaxSize,
 				)
 			}
@@ -214,7 +215,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 		"Scalyr HTTP Request",
 		"nbSentEvents", len(uploadData.Events),
 		"nbWaitingEvents", len(clt.events),
-		"data", string(rawJson),
+		"data", string(rawJSON),
 	)
 
 	backoffTime := time.Duration(0)
@@ -223,7 +224,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 		time.Sleep(time.Duration(time.Millisecond.Nanoseconds() * int64(clt.config.RequestMinPeriod)))
 
 		var resp *http.Response
-		resp, err = clt.httpClient.Post(clt.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJson))
+		resp, err = clt.httpClient.Post(clt.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJSON))
 
 		if err != nil {
 			clt.log.Warnw(
@@ -241,7 +242,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 				uploadData.SessionInfo = nil
 			}
 			if clt.maxNbEvents < clt.config.RequestMaxNbEvents {
-				clt.maxNbEvents += 1
+				clt.maxNbEvents++
 			}
 		}
 

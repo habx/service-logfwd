@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"net"
+
+	"go.uber.org/zap"
 )
 
 type Server struct {
-	config         *Config
-	exit           chan int
-	log            *zap.SugaredLogger
+	config *Config
+	exit   chan int
+	log    *zap.SugaredLogger
 }
 
 func NewServer(config *Config, log *zap.SugaredLogger) *Server {
@@ -44,7 +45,7 @@ func (srv *Server) acceptConnections(listener net.Listener) {
 			return
 		}
 		// Handle connections in a new goroutine.
-		clientNb += 1
+		clientNb++
 		go srv.NewClientHandler(conn, clientNb).run()
 	}
 }

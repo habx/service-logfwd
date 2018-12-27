@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Level defines the severity levle of each log
+// Level defines the severity level of each log
 type Level uint8
 
 const (

@@ -16,7 +16,6 @@ type Config struct {
 	LogstashAuthKey      string `envconfig:"LOGSTASH_AUTH_KEY"`       // Logstash authentication key
 	LogstashAuthValue    string `envconfig:"LOGSTASH_AUTH_VALUE"`     // Logstash authentication value
 	OutputClientConfigs  map[string]clients.Config
-	//Scalyr              *scalyr.Config
 }
 
 func NewConfig() *Config {
@@ -25,7 +24,6 @@ func NewConfig() *Config {
 		LogstashMaxEventSize: 300 * 1024, // 300KB
 		LogEnv:               "prod",
 		OutputClientConfigs:  make(map[string]clients.Config),
-		//Scalyr:               scalyr.NewConfig(),
 	}
 }
 

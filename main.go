@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
 )
 
 func getLog(dev bool) *zap.SugaredLogger {
