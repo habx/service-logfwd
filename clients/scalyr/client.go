@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/habx/service-logfwd/clients"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
