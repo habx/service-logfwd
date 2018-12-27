@@ -2,6 +2,7 @@ package datadog
 
 import (
 	"fmt"
+
 	"github.com/kelseyhightower/envconfig"
 )
 

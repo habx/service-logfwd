@@ -6,6 +6,7 @@ import (
 	"github.com/habx/service-logfwd/clients/scalyr"
 )
 
+// nolint
 var LIST = []clients.OutputClientDefinition{
 	scalyr.OutputClientDefinition(),
 	datadog.OutputClientDefinition(),

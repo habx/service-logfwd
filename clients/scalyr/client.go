@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/habx/service-logfwd/clients"
-	"github.com/satori/go.uuid"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/habx/service-logfwd/clients"
+	uuid "github.com/satori/go.uuid"
+	"go.uber.org/zap"
 )
 
 type Client struct {
@@ -118,28 +119,28 @@ func (clt *Client) writeToScalyr() {
 		"conn_id":  clt.srcClient.ID(),
 		"source":   "logfwd",
 	}
-	sessionInfoLastTransmission := time.Unix(0, 0)
+	// sessionInfoLastTransmission := time.Unix(0, 0)
 	events := make([]*LogEvent, clt.config.RequestMaxNbEvents)
 
 	for loop {
 		events := events[:0]
 
 		// Every 3 minutes, we give some info about the current steam
-		sessionInfoSend := time.Now().Sub(sessionInfoLastTransmission) > time.Second*30
+		// sessionInfoSend := time.Now().Sub(sessionInfoLastTransmission) > time.Second*30
 
 		// We read all the events
 		for len(events) == 0 || (len(clt.events) > 0 && len(events) < clt.maxNbEvents) {
 			event := <-clt.events
 			if event == nil {
 				loop = false
-				sessionInfoSend = true
+				// sessionInfoSend = true
 			} else {
 				// Adding all the event's sessionInfo to the stream session info
 				if event.sessionInfo != nil {
 					for k, v := range event.sessionInfo {
 						if sessionInfo[k] != v {
 							sessionInfo[k] = v
-							sessionInfoSend = true
+							// sessionInfoSend = true
 						}
 					}
 					event.sessionInfo = nil
@@ -149,14 +150,14 @@ func (clt *Client) writeToScalyr() {
 		}
 
 		// Always send sessionInfo for now
-		sessionInfoSend = true
+		// sessionInfoSend = true
 
 		// If we have some session data to send
-		if sessionInfoSend {
-			sessionInfoSend = false
-			sessionInfoLastTransmission = time.Now()
-			uploadData.SessionInfo = sessionInfo
-		}
+		// if sessionInfoSend {
+		// sessionInfoSend = false
+		// sessionInfoLastTransmission = time.Now()
+		uploadData.SessionInfo = sessionInfo
+		// }
 
 		uploadData.Events = events
 
@@ -170,11 +171,11 @@ func (clt *Client) writeToScalyr() {
 }
 
 func (clt *Client) sendRequest(uploadData *UploadData) error {
-	var rawJson []byte
+	var rawJSON []byte
 	var err error
 	for {
-		rawJson, err = json.Marshal(uploadData)
-		size := len(rawJson)
+		rawJSON, err = json.Marshal(uploadData)
+		size := len(rawJSON)
 		if size > clt.config.RequestMaxSize {
 			if clt.maxNbEvents > 1 {
 				clt.log.Debugw(
@@ -194,7 +195,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 			} else {
 				return fmt.Errorf(
 					"request is too big: requestSize=%d > maxRequestSize=%d",
-					len(rawJson),
+					len(rawJSON),
 					clt.config.RequestMaxSize,
 				)
 			}
@@ -214,7 +215,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 		"Scalyr HTTP Request",
 		"nbSentEvents", len(uploadData.Events),
 		"nbWaitingEvents", len(clt.events),
-		"data", string(rawJson),
+		"data", string(rawJSON),
 	)
 
 	backoffTime := time.Duration(0)
@@ -223,7 +224,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 		time.Sleep(time.Duration(time.Millisecond.Nanoseconds() * int64(clt.config.RequestMinPeriod)))
 
 		var resp *http.Response
-		resp, err = clt.httpClient.Post(clt.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJson))
+		resp, err = clt.httpClient.Post(clt.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJSON))
 
 		if err != nil {
 			clt.log.Warnw(
@@ -241,7 +242,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 				uploadData.SessionInfo = nil
 			}
 			if clt.maxNbEvents < clt.config.RequestMaxNbEvents {
-				clt.maxNbEvents += 1
+				clt.maxNbEvents++
 			}
 		}
 

@@ -4,27 +4,29 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/habx/service-logfwd/clients"
-	"github.com/habx/service-logfwd/clients/list"
-	"go.uber.org/zap"
 	"io"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/habx/service-logfwd/clients"
+	"github.com/habx/service-logfwd/clients/list"
+	"go.uber.org/zap"
 )
 
+// ClientHandler is structure instantiate for each new (logstash) incoming client
 type ClientHandler struct {
 	server        *Server
 	Conn          net.Conn
 	id            int
 	totalNbEvents int
 	arrivalTime   time.Time
-	maxNbEvents   int
 	log           *zap.SugaredLogger
 	needsAuth     bool
 	outputs       []clients.OutputClient
 }
 
+// NewClientHandler instantiates a new client handler
 func (srv *Server) NewClientHandler(conn net.Conn, nb int) *ClientHandler {
 	clt := &ClientHandler{
 		server:      srv,
@@ -139,7 +141,8 @@ func (clt *ClientHandler) run() {
 }
 
 // https://www.scalyr.com/help/parsing-logs#specialAttrs
-var SeverityConversions = map[string]clients.Level{
+// nolint
+var severityConversions = map[string]clients.Level{
 	"finest":    clients.LvlFinest,
 	"finer":     clients.LvlTrace,
 	"trace":     clients.LvlTrace,
@@ -165,20 +168,20 @@ var SeverityConversions = map[string]clients.Level{
 }
 
 func (clt *ClientHandler) ParseLogstashLine(line string) error {
-	var lineJson map[string]interface{}
+	var lineJSON map[string]interface{}
 
 	clt.log.Debugw(
 		"Received from logstash",
 		"line", line,
 	)
 
-	if err := json.Unmarshal([]byte(line), &lineJson); err != nil {
+	if err := json.Unmarshal([]byte(line), &lineJSON); err != nil {
 		return err
 	}
 
 	// Checking authentication if required
 	if clt.needsAuth {
-		value, ok := lineJson[clt.server.config.LogstashAuthKey]
+		value, ok := lineJSON[clt.server.config.LogstashAuthKey]
 		if !ok || clt.server.config.LogstashAuthValue != value {
 			return fmt.Errorf("wrong authentication with key %s", clt.server.config.LogstashAuthKey)
 		}
@@ -186,12 +189,12 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 	}
 
 	if clt.server.config.LogstashAuthKey != "" {
-		delete(lineJson, clt.server.config.LogstashAuthKey)
+		delete(lineJSON, clt.server.config.LogstashAuthKey)
 	}
 
 	event := &clients.LogEvent{
 		Timestamp:  time.Now(),
-		Attributes: lineJson,
+		Attributes: lineJSON,
 	}
 
 	// Fetching the timestamp
@@ -203,12 +206,11 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 	}
 
 	// We copy the extra fields to the root (otherwise, scalyr will index them as big chunk of a JSON string)
-	if value, ok := event.Attributes["@fields"]; ok {
-		switch v := value.(type) {
-		case map[string]interface{}:
-			for fieldsKey, value := range v {
-				if _, ok := event.Attributes[fieldsKey]; !ok {
-					event.Attributes[fieldsKey] = value
+	if fields, ok := event.Attributes["@fields"]; ok {
+		if fields, ok := fields.(map[string]interface{}); ok {
+			for k, v := range fields {
+				if _, ok := event.Attributes[k]; !ok {
+					event.Attributes[k] = v
 				}
 			}
 		}
@@ -230,7 +232,7 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 			}
 		}
 		if ok {
-			if level, ok = SeverityConversions[strings.ToLower(levelName)]; ok {
+			if level, ok = severityConversions[strings.ToLower(levelName)]; ok {
 				event.Severity = level
 			}
 		}
@@ -239,7 +241,7 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 		}
 	}
 
-	clt.totalNbEvents += 1
+	clt.totalNbEvents++
 	clt.send(event)
 
 	return nil

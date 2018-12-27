@@ -2,8 +2,9 @@ package scalyr
 
 import (
 	"fmt"
-	"github.com/kelseyhightower/envconfig"
 	"strings"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
@@ -60,9 +61,6 @@ func (c *Config) Enabled() bool {
 }
 
 func (c *Config) check() error {
-	if c.Token == "" {
-		return fmt.Errorf("no scalyr token was provided, use SCALYR_WRITELOG_TOKEN env var to specify it")
-	}
 	if strings.HasSuffix(c.Server, "/") {
 		return fmt.Errorf("do not end the URL by a /")
 	}
