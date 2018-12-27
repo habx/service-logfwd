@@ -1,4 +1,4 @@
-# Log forward
+# Log forward(er)
 
 ## Goal
 Using scalyr and datadog logging platforms as drop-in replacement for your previous logstash architecture.
