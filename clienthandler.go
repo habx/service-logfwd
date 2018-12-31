@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -22,7 +23,6 @@ type ClientHandler struct {
 	totalNbEvents int
 	arrivalTime   time.Time
 	log           *zap.SugaredLogger
-	needsAuth     bool
 	outputs       []clients.OutputClient
 }
 
@@ -34,7 +34,6 @@ func (srv *Server) NewClientHandler(conn net.Conn, nb int) *ClientHandler {
 		id:          nb,
 		arrivalTime: time.Now(),
 		log:         srv.log.With("clientID", nb),
-		needsAuth:   srv.config.LogstashAuthKey != "",
 	}
 
 	clt.createClients()
@@ -169,26 +168,35 @@ var severityConversions = map[string]clients.Level{
 
 func (clt *ClientHandler) ParseLogstashLine(line string) error {
 	var lineJSON map[string]interface{}
+	authenticated := false
 
 	clt.log.Debugw(
 		"Received from logstash",
 		"line", line,
 	)
 
+	if clt.server.config.LogstashAuthPrefixToken != "" {
+		spl := strings.SplitN(line, " ", 2)
+		if len(spl) != 2 {
+			return errors.New("you need to have an auth prefix")
+		}
+		if spl[0] != clt.server.config.LogstashAuthPrefixToken {
+			return errors.New("wrong auth prefix token authentication")
+		}
+		authenticated = true
+		line = spl[1]
+	}
+
 	if err := json.Unmarshal([]byte(line), &lineJSON); err != nil {
 		return err
 	}
 
 	// Checking authentication if required
-	if clt.needsAuth {
+	if !authenticated && clt.server.config.LogstashAuthKey != "" {
 		value, ok := lineJSON[clt.server.config.LogstashAuthKey]
 		if !ok || clt.server.config.LogstashAuthValue != value {
 			return fmt.Errorf("wrong authentication with key %s", clt.server.config.LogstashAuthKey)
 		}
-		clt.needsAuth = false
-	}
-
-	if clt.server.config.LogstashAuthKey != "" {
 		delete(lineJSON, clt.server.config.LogstashAuthKey)
 	}
 
