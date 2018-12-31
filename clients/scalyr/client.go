@@ -221,7 +221,7 @@ func (clt *Client) sendRequest(uploadData *UploadData) error {
 	backoffTime := time.Duration(0)
 	backoffIncrement := time.Second
 	for backoffIncrement < time.Minute {
-		time.Sleep(time.Duration(time.Millisecond.Nanoseconds() * int64(clt.config.RequestMinPeriod)))
+		time.Sleep(time.Millisecond * time.Duration(clt.config.RequestMinPeriod))
 
 		var resp *http.Response
 		resp, err = clt.httpClient.Post(clt.config.scalyrEndpoint, "application/json", bytes.NewBuffer(rawJSON))

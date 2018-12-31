@@ -24,7 +24,7 @@ func NewConfig() *Config {
 		Server:             "https://www.scalyr.com",
 		RequestMaxNbEvents: 20,
 		RequestMaxSize:     2 * 1024 * 1024, // 2MB is much lower than the allowed 3MB
-		RequestMinPeriod:   1000,
+		RequestMinPeriod:   0,
 		QueueSize:          1000,
 		// These are the attribute keys to convert within a message
 		KeysToMessageConversions: map[string]string{
