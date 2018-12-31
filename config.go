@@ -10,12 +10,13 @@ import (
 
 // Config is the main config
 type Config struct {
-	ListenAddr           string `envconfig:"LISTEN_ADDR"`             // Listening address
-	LogEnv               string `envconfig:"LOG_ENV"`                 // Logging environment: dev or prod
-	LogstashMaxEventSize int    `envconfig:"LOGSTASH_EVENT_MAX_SIZE"` // Maximum size accepted for reading data in logstash
-	LogstashAuthKey      string `envconfig:"LOGSTASH_AUTH_KEY"`       // Logstash authentication key
-	LogstashAuthValue    string `envconfig:"LOGSTASH_AUTH_VALUE"`     // Logstash authentication value
-	OutputClientConfigs  map[string]clients.Config
+	ListenAddr              string `envconfig:"LISTEN_ADDR"`                // Listening address
+	LogEnv                  string `envconfig:"LOG_ENV"`                    // Logging environment: dev or prod
+	LogstashMaxEventSize    int    `envconfig:"LOGSTASH_EVENT_MAX_SIZE"`    // Maximum size accepted for reading data in logstash
+	LogstashAuthPrefixToken string `envconfig:"LOGSTASH_AUTH_PREFIX_TOKEN"` // Logstash prefix auth token (logmatic format)
+	LogstashAuthKey         string `envconfig:"LOGSTASH_AUTH_KEY"`          // Logstash authentication key
+	LogstashAuthValue       string `envconfig:"LOGSTASH_AUTH_VALUE"`        // Logstash authentication value
+	OutputClientConfigs     map[string]clients.Config
 }
 
 func NewConfig() *Config {
