@@ -188,6 +188,11 @@ func (clt *ClientHandler) ParseLogstashLine(line string) error {
 	}
 
 	if err := json.Unmarshal([]byte(line), &lineJSON); err != nil {
+		clt.log.Warnw(
+			"Couldn't parse logstash line",
+			"line", line,
+			"err", err,
+		)
 		return err
 	}
 

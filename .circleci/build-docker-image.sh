@@ -14,6 +14,9 @@ else
     DOCKER_IMAGE_TAG=test
 fi
 
+# Cleaning up image name
+DOCKER_IMAGE_TAG=$(echo ${DOCKER_IMAGE_TAG} | sed "s/[^a-zA-Z0-9-]/_/g")
+
 DOCKER_IMAGE_FULL=${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
 docker build . -t ${DOCKER_IMAGE_FULL}
