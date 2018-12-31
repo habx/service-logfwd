@@ -100,29 +100,45 @@ func (clt *Client) writeToDatadogTCPInput() {
 
 	var conn *tls.Conn
 	var err error
+	connectionAttempts := 0
 
 	for {
 		event := <-clt.events
 
 		if event == nil {
-			if err := conn.Close(); err != nil {
-				clt.log.Warnw(
-					"Could not close data",
-					"err", err,
-				)
+			if conn != nil {
+				if err := conn.Close(); err != nil {
+					clt.log.Warnw(
+						"Could not close data",
+						"err", err,
+					)
+				}
 			}
 			break
 		}
 
 		if conn == nil {
+			connectionAttempts++
 			conn, err = tls.Dial("tcp", clt.config.Server, &tls.Config{})
 			if err != nil {
 				clt.log.Warnw(
 					"Could not connect",
+					"server", clt.config.Server,
+					"connectionAttempts", connectionAttempts,
 					"err", err,
 				)
-				time.Sleep(time.Second * 5)
+				if connectionAttempts > 10 {
+					clt.log.Warnw("Too many connection attempts")
+					break
+				}
+				time.Sleep(time.Second * time.Duration(5*connectionAttempts))
 				continue
+			} else {
+				clt.log.Debug(
+					"Successfully connected to datadog server",
+					"server", clt.config.Server,
+				)
+				connectionAttempts = 0
 			}
 		}
 
