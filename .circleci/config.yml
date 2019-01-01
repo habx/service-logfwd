@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run: /build/run.sh
-      - run: cat version.txt
+      - run: cat version.txt build.json
   build-binary:
     docker:
       - image: circleci/golang:1.11
