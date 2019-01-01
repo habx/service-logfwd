@@ -3,6 +3,7 @@ jobs:
   get-version:
     docker:
       - image: habx/devops-build-infos
+    working_directory: /work
     steps:
       - checkout
       - run: /build/run.sh
