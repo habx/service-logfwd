@@ -9,7 +9,7 @@ jobs:
       - run: /build/run.sh
       - run: cat version.txt build.json
       - persist_to_workspace:
-          root: /build-info
+          root: /work
           paths:
             - version.txt
             - build.json
