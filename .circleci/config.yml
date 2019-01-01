@@ -1,5 +1,12 @@
 version: 2
 jobs:
+  get-version:
+    docker:
+      - image: habx/devops-build-infos
+    steps:
+      - checkout
+      - run: /build/run.sh
+      - run: cat version.txt
   build-binary:
     docker:
       - image: circleci/golang:1.11
