@@ -18,6 +18,9 @@ jobs:
       - image: circleci/golang:1.11
     steps:
       - checkout
+      - attach_workspace:
+          at: /workspace
+      - run: cp /workspace/version.txt .
       - run: .circleci/build-binary.sh
       - store_artifacts:
           path: /tmp/artifacts
