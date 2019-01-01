@@ -19,8 +19,8 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /workspace
-      - run: cp /workspace/version.txt .
+          at: /tmp/workspace
+      - run: cp /tmp/workspace/version.txt .
       - run: .circleci/build-binary.sh
       - store_artifacts:
           path: /tmp/artifacts
