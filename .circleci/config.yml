@@ -41,7 +41,10 @@ workflows:
   build:
     jobs:
       - linting
-      - build-binary
+      - get-version
+      - build-binary:
+          requires:
+            - get-version
       - build-docker-image:
           requires:
             - build-binary
