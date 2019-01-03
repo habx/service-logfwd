@@ -40,7 +40,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /workspace
+          at: /tmp/workspace
       - setup_remote_docker
       - run: .circleci/build-docker-image.sh
 

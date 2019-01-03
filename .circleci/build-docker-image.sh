@@ -3,7 +3,7 @@
 # docker run -ti --rm -v $(pwd):/work -v /var/run/docker.sock:/var/run/docker.sock -w /work docker:18
 
 if [ ! -f logfwd ]; then
-    cp /workspace/logfwd .
+    cp /tmp/workspace/logfwd .
 fi
 
 DOCKER_IMAGE_NAME=habx/logfwd
