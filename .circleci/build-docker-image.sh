@@ -10,7 +10,7 @@ DOCKER_IMAGE_NAME=habx/logfwd
 
 if [ "${CIRCLE_TAG}" != "" ]; then # Tag names are cleaned up and simplified
     # Am I going to hell ?
-    DOCKER_IMAGE_TAGS=$(echo ${CIRCLE_TAG} | grep -Eo "v([0-9]+\.){0}[0-9]+")' '$(echo ${CIRCLE_TAG} | grep -Eo "v([0-9]+\.){1}[0-9]+")' '$(echo ${CIRCLE_TAG} | grep -Eo "v([0-9]+\.){2}[0-9]+")
+    DOCKER_IMAGE_TAGS=$(echo ${CIRCLE_TAG} | grep -Eo "v([0-9]+\.){2}[0-9]+")' '$(echo ${CIRCLE_TAG} | grep -Eo "v([0-9]+\.){1}[0-9]+")' '$(echo ${CIRCLE_TAG} | grep -Eo "v([0-9]+\.){0}[0-9]+")
 elif [ "${CIRCLE_BRANCH}" != "" ]; then # Branch names are cleaned up
     DOCKER_IMAGE_TAGS=$(echo ${CIRCLE_BRANCH} | sed "s/[^a-zA-Z0-9\.]/-/g")
 else
