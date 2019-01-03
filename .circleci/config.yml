@@ -2,7 +2,7 @@ version: 2
 jobs:
   get-version:
     docker:
-      - image: habx/devops-build-infos
+      - image: habx/devops-build-infos:circleci
     working_directory: /work
     steps:
       - checkout
