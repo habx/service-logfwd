@@ -1,10 +1,26 @@
 version: 2
 jobs:
+  get-version:
+    docker:
+      - image: habx/devops-build-infos
+    working_directory: /work
+    steps:
+      - checkout
+      - run: /build/run.sh
+      - run: cat version.txt build.json
+      - persist_to_workspace:
+          root: /work
+          paths:
+            - version.txt
+            - build.json
   build-binary:
     docker:
       - image: circleci/golang:1.11
     steps:
       - checkout
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: cp /tmp/workspace/version.txt .
       - run: .circleci/build-binary.sh
       - store_artifacts:
           path: /tmp/artifacts
@@ -34,7 +50,10 @@ workflows:
   build:
     jobs:
       - linting
-      - build-binary
+      - get-version
+      - build-binary:
+          requires:
+            - get-version
       - build-docker-image:
           requires:
             - build-binary

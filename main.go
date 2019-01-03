@@ -23,7 +23,10 @@ func getLog(dev bool) *zap.SugaredLogger {
 func main() {
 	log := getLog(false)
 
-	log.Infow("Starting")
+	log.Infow(
+		"Starting",
+		"version", VERSION,
+	)
 
 	config := NewConfig()
 
