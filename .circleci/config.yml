@@ -50,10 +50,19 @@ workflows:
   build:
     jobs:
       - linting
-      - get-version
+      - get-version:
+          filters:
+            tags:
+              only: /^v[0-9.]+$/
       - build-binary:
           requires:
             - get-version
+          filters:
+            tags:
+              only: /^v[0-9.]+$/
       - build-docker-image:
           requires:
             - build-binary
+          filters:
+            tags:
+              only: /^v[0-9.]+$/
