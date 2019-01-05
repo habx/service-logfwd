@@ -30,20 +30,19 @@ jobs:
             - logfwd
   linting:
     docker:
-      - image: golang:1.11 # circleci/golang:1.11 #golangci/golangci-lint:v1.10
-    working_directory: /work
+      - image: golang:1.11 # golang:1.11 #golangci/golangci-lint:v1.10
     steps:
       - checkout
       - run: .circleci/linting.sh
   build-docker-image:
     docker:
-      - image: docker:18
+      - image: circleci/golang:1.11
     steps:
       - checkout
       - attach_workspace:
-          at: /workspace
+          at: /tmp/workspace
       - setup_remote_docker
-      - run: .circleci/build-docker-image.sh
+      - run: .circleci/build_docker_image.py
 
 workflows:
   version: 2
