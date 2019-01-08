@@ -21,7 +21,7 @@ Logstash has logging clients in all languages, it's good compromise between simp
 ## How it works
 
 ### General overview
-For each logstash client connected to the server, it will create independent logging sessions, wether it's for sclayr
+For each logstash client connected to the server, it will create independent logging sessions, whether it's for sclayr
 or datadog.
 
 Each logstash event is parsed, converted to basic logging event, then passed to all the output clients that are
@@ -39,15 +39,15 @@ To easily re-use an existing logstash implementation, a few tricks are needed:
 ### Env vars
 Everything is handled through environment variables
 
-#### General
+#### Logstash input
 - `LISTEN_ADDR` (optional): Port to listen on. Defaults to `:5050`
 - `LOG_ENV` (optional): Logging mode. Defaults to `prod`. Use `dev` for sort-of-pretty logging in debug level.
 - `LOGSTASH_EVENT_MAX_SIZE` (optional): Maximum size of a logstash event. Defaults to `307200` (300 KB)
 - `LOGSTASH_AUTH_KEY` (optional): Key to use for authentication. Not set by default
 - `LOGSTASH_AUTH_VALUE` (optional): Value expected for the authentication key. Not set by default
 
-#### Scalyr
-- `SCALYR_WRITELOG_TOKEN` (enables it) : Your scalyr log write token
+#### Scalyr output
+- `SCALYR_WRITELOG_TOKEN` (enables it): Your scalyr log write token
 - `SCALYR_FIELDS_CONV_MESSAGE` (optional): Conversion to apply between logstash and scalyr event attributes
 - `SCALYR_FIELDS_CONV_SESSION` (optional): Conversion to apply between logstash events and scalyr log session attributes
 - `SCALYR_SERVER` (optional): URL to use for reporting logs. Defaults to `https://www.scalyr.com`, you can also use `https://eu.scalyr.com` for an european account
@@ -56,7 +56,7 @@ Everything is handled through environment variables
 - `SCALYR_REQUEST_MIN_PERIOD` (optional): Minimum time between queries (mostly for testing, can also be used to reduce total bandwidth)
 - `SCALYR_QUEUE_SIZE` (optional): Buffering queue between logstash and scalyr. Defaults to `1000`
 
-#### Datadog
+#### Datadog output
 - `DATADOG_TOKEN` (enables it) : Your datadog token
 - `DATADOG_SERVER` (optiona): Datadog server. Defaults to `intake.logs.datadoghq.com:15506`, use `tcp-intake.logs.datadoghq.eu:443` for europe
 - `DATADOG_QUEUESIZE` (optional): Queue size. Defautls to `20`. As it's a TCP to TCP stream, it can be kept to a low value
@@ -84,20 +84,20 @@ Everything is handled through environment variables
 }
 ```
 
-# Dependencies
+## Dependencies
 The dependencies outside the standard library are:
 
 - [zap](https://github.com/uber-go/zap) for logs
 - [envconfig](github.com/kelseyhightower/envconfig) for config management through environemnt variables
 - [go.uuid](github.com/satori/go.uuid) for scalyr sessions UUID generation
 
-# Feedback
+## Feedback
 Any feedback is welcome.
 
-# Possible evolutions
+## Possible evolutions
 - Handling of scalyr's threads. I'm not entirely sure of how we could use them.
 
-# Known issues
+## Known issues
 - Could be optimized (but probably handles tenths of megabytes per second)
 - Some logstash fields might not be very well converted
 - Some logstash fields might be transmitted in the session data to reduce the amount of data being sent
@@ -106,7 +106,7 @@ Any feedback is welcome.
 - Needs some refactoring
 - SSL isn't supported (easy to add)
 - No clean shutdown: We should stop to accept clients and disconnect existing ones
-- Only supports TCP. UDP wouldn't be difficult to setup but the sessionInfo mechanism would have to be handheld by other means
+- Only supports TCP. UDP wouldn't be difficult to setup but the scalyr's sessionInfo mechanism would have to be handheld by other means
 
 # License
 MIT
