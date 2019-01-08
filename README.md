@@ -9,7 +9,7 @@ the following command:
 ```bash
 docker run --rm -p 5050:5050 -e DATADOG_TOKEN=... -e SCALYR_TOKEN=... habx/logfwd:dev 
 ```
-At least one of the two is necessary.
+At least one of the two tokens (`DATADOG_TOKEN` or `SCALYR-TOKEN`) is necessary.
 
 ## Why
 Scalyr and datadog push you to use their agent to do logging but:
